@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نظام حلم لإدارة المكاتب القانونية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Tajawal', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                primary: 'var(--brand-primary)',
+                secondary: 'var(--brand-secondary)',
+                accent: 'var(--brand-accent)',
+                50: '#f8fafc',
+                100: '#f1f5f9',
+                500: '#64748b',
+                600: '#475569',
+                700: '#334155',
+                800: '#1e293b',
+                900: '#0f172a',
+              },
+              ice: {
+                50: '#f0f9ff',
+                100: '#e0f2fe',
+                200: '#bae6fd',
+                500: '#0ea5e9'
+              }
+            },
+            animation: {
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'float': 'float 3s ease-in-out infinite',
+              'shimmer': 'shimmer 2s linear infinite',
+              'spin-slow': 'spin 8s linear infinite',
+              'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              shimmer: {
+                '0%': { backgroundPosition: '-200% 0' },
+                '100%': { backgroundPosition: '200% 0' },
+              },
+              shake: {
+                '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+      
+      :root {
+        --brand-primary: #1e293b;
+        --brand-secondary: #f1f5f9;
+        --brand-accent: #334155;
+      }
+
+      [data-theme="slate"] { --brand-primary: #1e293b; --brand-secondary: #f1f5f9; --brand-accent: #334155; }
+      [data-theme="blue"] { --brand-primary: #1d4ed8; --brand-secondary: #eff6ff; --brand-accent: #2563eb; }
+      [data-theme="indigo"] { --brand-primary: #4338ca; --brand-secondary: #eef2ff; --brand-accent: #4f46e5; }
+      [data-theme="rose"] { --brand-primary: #be123c; --brand-secondary: #fff1f2; --brand-accent: #e11d48; }
+      [data-theme="emerald"] { --brand-primary: #047857; --brand-secondary: #ecfdf5; --brand-accent: #059669; }
+
+      body {
+        font-family: 'Tajawal', sans-serif;
+        background-color: #f8fafc;
+        overflow-x: hidden;
+      }
+      
+      .logo-3d-gold {
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: -0.05em;
+        background: linear-gradient(to bottom, #fde68a 0%, #fbbf24 20%, #d97706 45%, #b45309 50%, #92400e 60%, #78350f 80%, #451a03 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.1));
+      }
+
+      /* Frosted Glass Background */
+      .frosted-bg {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #ffffff 100%);
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+      }
+
+      .ice-mist {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: url('https://www.transparenttextures.com/patterns/foggy-birds.png');
+        opacity: 0.1;
+        pointer-events: none;
+      }
+
+      .glass-shard {
+        backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+        pointer-events: none;
+      }
+
+      .icy-button {
+        backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 10px 30px rgba(14, 165, 233, 0.1);
+      }
+
+      .icy-button:hover {
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 15px 40px rgba(14, 165, 233, 0.2);
+        transform: translateY(-2px);
+      }
+
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f0f9ff; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #bae6fd; 
+        border-radius: 10px;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "jszip": "https://esm.sh/jszip@3.10.1",
+    "jspdf": "https://esm.sh/jspdf@2.5.1"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
