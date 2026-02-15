@@ -4,8 +4,7 @@ import { StoreProvider, useStore } from './store';
 import { HashRouter, Routes, Route, Navigate, useLocation, Link, useNavigate } from 'react-router-dom';
 import { 
     LayoutDashboard, Users, Briefcase, FileText, DollarSign, Settings, 
-    LogOut, Bell, Menu, X, Database, Globe, Zap, Search, ArrowLeft,
-    ChevronLeft, FileDigit, Gavel
+    LogOut, Bell, Menu, X, Database, Globe, Zap, Search, ChevronLeft, Gavel
 } from 'lucide-react';
 
 // Pages
@@ -25,15 +24,15 @@ const SidebarItem = ({ icon: Icon, label, to, active, onClick }: { icon: any, la
   <Link 
     to={to} 
     onClick={onClick}
-    className={`flex items-center px-6 py-4 text-sm font-black transition-all rounded-2xl mx-4 my-1.5 ${active ? 'bg-slate-900 text-white shadow-3d translate-x-[-8px]' : 'text-slate-500 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
+    className={`flex items-center px-7 py-5 text-sm font-black transition-all rounded-[22px] mx-5 my-2 ${active ? 'bg-slate-900 text-white shadow-3d-md translate-x-[-12px]' : 'text-slate-500 hover:bg-white hover:shadow-3d-sm hover:text-slate-900'}`}
   >
-    <Icon className={`h-5 w-5 ml-4 ${active ? 'text-white animate-pulse' : 'text-slate-400'}`} />
+    <Icon className={`h-6 w-6 ml-4 ${active ? 'text-white' : 'text-slate-400'}`} />
     {label}
   </Link>
 );
 
 const GlobalSearch = () => {
-    const { clients, cases, documents, transactions } = useStore();
+    const store = useStore();
     const [query, setQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
@@ -49,12 +48,9 @@ const GlobalSearch = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const filteredClients = query ? clients.filter(c => c.fullName.toLowerCase().includes(query.toLowerCase()) || c.phone?.includes(query)) : [];
-    const filteredCases = query ? cases.filter(c => c.title.toLowerCase().includes(query.toLowerCase()) || c.caseNumber.includes(query)) : [];
-    const filteredDocs = query ? documents.filter(d => d.title.toLowerCase().includes(query.toLowerCase())) : [];
-    const filteredTx = query ? transactions.filter(t => t.description.toLowerCase().includes(query.toLowerCase())) : [];
-
-    const hasResults = filteredClients.length > 0 || filteredCases.length > 0 || filteredDocs.length > 0 || filteredTx.length > 0;
+    const filteredClients = query ? store.clients.filter(c => c.fullName.toLowerCase().includes(query.toLowerCase())) : [];
+    const filteredCases = query ? store.cases.filter(c => c.title.toLowerCase().includes(query.toLowerCase())) : [];
+    const hasResults = filteredClients.length > 0 || filteredCases.length > 0;
 
     const handleSelect = (to: string) => {
         setQuery('');
@@ -63,103 +59,55 @@ const GlobalSearch = () => {
     };
 
     return (
-        <div ref={searchRef} className="relative flex-1 max-w-xl mx-8 hidden md:block z-50">
-            <div className={`relative flex items-center bg-white rounded-2xl border transition-all duration-300 ${isOpen ? 'shadow-3d border-slate-900' : 'border-slate-100 shadow-sm'}`}>
-                <Search className={`absolute right-4 h-5 w-5 transition-colors ${isOpen ? 'text-slate-900' : 'text-slate-400'}`} />
+        <div ref={searchRef} className="relative flex-1 max-w-2xl mx-10 hidden md:block z-50">
+            <div className={`relative flex items-center bg-white rounded-[20px] border-2 transition-all duration-300 ${isOpen ? 'shadow-3d-lg border-slate-900' : 'border-slate-50 shadow-3d-sm'}`}>
+                <Search className={`absolute right-5 h-6 w-6 ${isOpen ? 'text-slate-900' : 'text-slate-400'}`} />
                 <input
                     type="text"
-                    placeholder="ابحث عن موكل، رقم قضية، أو مستند..."
-                    className="w-full pr-12 pl-4 py-3.5 bg-transparent outline-none font-bold text-sm"
+                    placeholder="ابحث في قاعدة بيانات المكتب..."
+                    className="w-full pr-14 pl-5 py-4 bg-transparent outline-none font-bold text-sm"
                     value={query}
-                    onChange={(e) => {
-                        setQuery(e.target.value);
-                        setIsOpen(true);
-                    }}
+                    onChange={(e) => { setQuery(e.target.value); setIsOpen(true); }}
                     onFocus={() => setIsOpen(true)}
                 />
-                {query && (
-                    <button onClick={() => setQuery('')} className="absolute left-4 p-1 hover:bg-slate-100 rounded-full">
-                        <X className="h-4 w-4 text-slate-400" />
-                    </button>
-                )}
             </div>
 
             {isOpen && query && (
-                <div className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-xl rounded-3xl border border-white/50 shadow-3xl max-h-[70vh] overflow-y-auto animate-in fade-in zoom-in duration-200 card-depth">
+                <div className="absolute top-full left-0 right-0 mt-4 bg-white/95 backdrop-blur-2xl rounded-[32px] border-2 border-white shadow-3d-lg max-h-[60vh] overflow-y-auto p-6 animate-in fade-in zoom-in duration-200">
                     {!hasResults ? (
-                        <div className="p-10 text-center">
-                            <Search className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-                            <p className="text-sm font-black text-slate-400">لم يتم العثور على أي نتائج تطابق "{query}"</p>
-                        </div>
+                        <div className="p-10 text-center font-black text-slate-400 italic">لا توجد سجلات مطابقة...</div>
                     ) : (
-                        <div className="p-4 space-y-6">
+                        <div className="space-y-6 text-right">
                             {filteredClients.length > 0 && (
                                 <div>
-                                    <h4 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">الموكلين</h4>
+                                    <h4 className="px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">الموكلين</h4>
                                     {filteredClients.map(c => (
-                                        <button key={c.id} onClick={() => handleSelect(`/clients/${c.id}`)} className="w-full flex items-center p-3 hover:bg-slate-50 rounded-xl transition-all group text-right">
-                                            <div className="h-10 w-10 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black text-xs ml-3 group-hover:scale-110 transition-transform">
-                                                <Users className="h-5 w-5" />
+                                        <button key={c.id} onClick={() => handleSelect(`/clients/${c.id}`)} className="w-full flex items-center p-4 hover:bg-slate-50 rounded-2xl transition-all group">
+                                            <div className="h-12 w-12 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-sm ml-4">
+                                                <Users className="h-6 w-6" />
                                             </div>
-                                            <div className="flex-1">
+                                            <div className="flex-1 text-right">
                                                 <p className="text-sm font-black text-slate-900">{c.fullName}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold">{c.phone || 'بدون هاتف'}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold">{c.phone}</p>
                                             </div>
-                                            <ChevronLeft className="h-4 w-4 text-slate-300" />
+                                            <ChevronLeft className="h-5 w-5 text-slate-300" />
                                         </button>
                                     ))}
                                 </div>
                             )}
-
                             {filteredCases.length > 0 && (
                                 <div>
-                                    <h4 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">القضايا</h4>
+                                    <h4 className="px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">القضايا</h4>
                                     {filteredCases.map(c => (
-                                        <button key={c.id} onClick={() => handleSelect(`/cases`)} className="w-full flex items-center p-3 hover:bg-slate-50 rounded-xl transition-all group text-right">
-                                            <div className="h-10 w-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-xs ml-3 group-hover:scale-110 transition-transform">
-                                                <Gavel className="h-5 w-5" />
+                                        <button key={c.id} onClick={() => handleSelect(`/cases`)} className="w-full flex items-center p-4 hover:bg-slate-50 rounded-2xl transition-all group">
+                                            <div className="h-12 w-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-sm ml-4">
+                                                <Gavel className="h-6 w-6" />
                                             </div>
-                                            <div className="flex-1">
+                                            <div className="flex-1 text-right">
                                                 <p className="text-sm font-black text-slate-900">{c.title}</p>
                                                 <p className="text-[10px] text-slate-400 font-bold">رقم: {c.caseNumber}</p>
                                             </div>
-                                            <ChevronLeft className="h-4 w-4 text-slate-300" />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {filteredDocs.length > 0 && (
-                                <div>
-                                    <h4 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">المستندات</h4>
-                                    {filteredDocs.map(d => (
-                                        <button key={d.id} onClick={() => handleSelect(`/documents`)} className="w-full flex items-center p-3 hover:bg-slate-50 rounded-xl transition-all group text-right">
-                                            <div className="h-10 w-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white font-black text-xs ml-3 group-hover:scale-110 transition-transform">
-                                                <FileText className="h-5 w-5" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="text-sm font-black text-slate-900">{d.title}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold">{new Date(d.createdAt).toLocaleDateString('ar-SA')}</p>
-                                            </div>
-                                            <ChevronLeft className="h-4 w-4 text-slate-300" />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            {filteredTx.length > 0 && (
-                                <div>
-                                    <h4 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">المعاملات المالية</h4>
-                                    {filteredTx.map(t => (
-                                        <button key={t.id} onClick={() => handleSelect(`/finance`)} className="w-full flex items-center p-3 hover:bg-slate-50 rounded-xl transition-all group text-right">
-                                            <div className="h-10 w-10 bg-amber-500 rounded-lg flex items-center justify-center text-white font-black text-xs ml-3 group-hover:scale-110 transition-transform">
-                                                <DollarSign className="h-5 w-5" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="text-sm font-black text-slate-900">{t.description}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold">{t.amount.toLocaleString()} د.إ</p>
-                                            </div>
-                                            <ChevronLeft className="h-4 w-4 text-slate-300" />
+                                            <ChevronLeft className="h-5 w-5 text-slate-300" />
                                         </button>
                                     ))}
                                 </div>
@@ -177,36 +125,27 @@ const AppLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  if (!currentUser) {
-    return <Navigate to="/login" />;
-  }
+  if (!currentUser) return <Navigate to="/login" />;
 
   const navItems = [
     { icon: LayoutDashboard, label: "لوحة التحكم", to: "/" },
-    { icon: Bell, label: "مركز التنبيهات", to: "/reminders" },
-    { icon: Users, label: "قاعدة الموكلين", to: "/clients" },
-    { icon: Briefcase, label: "إدارة القضايا", to: "/cases" },
-    { icon: FileText, label: "أرشيف المستندات", to: "/documents" },
-    { icon: DollarSign, label: "المالية والمحاسبة", to: "/finance" },
-    { icon: Globe, label: "روابط حكومية", to: "/legal-hub" },
+    { icon: Bell, label: "التنبيهات", to: "/reminders" },
+    { icon: Users, label: "الموكلين", to: "/clients" },
+    { icon: Briefcase, label: "القضايا", to: "/cases" },
+    { icon: FileText, label: "المستندات", to: "/documents" },
+    { icon: DollarSign, label: "المالية", to: "/finance" },
+    { icon: Globe, label: "خدمات حكومية", to: "/legal-hub" },
     { icon: Database, label: "ترحيل البيانات", to: "/import" },
   ];
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar - Platinum 3D Style */}
-      <div className={`
-        fixed inset-y-0 right-0 w-80 sidebar-blur border-l border-white/50 flex flex-col z-50 transition-all duration-500
-        ${isSidebarOpen ? 'translate-x-0 shadow-3xl' : 'translate-x-full lg:translate-x-0'}
-      `}>
-        <div className="h-28 flex items-center justify-between px-10">
-          <span className="text-4xl logo-3d">HELM</span>
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-slate-400 p-2 hover:bg-white rounded-full">
-              <X className="h-6 w-6" />
-          </button>
+      <div className={`fixed inset-y-0 right-0 w-80 glass-3d flex flex-col z-50 transition-all duration-500 ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
+        <div className="h-32 flex items-center justify-between px-10">
+          <span className="text-5xl logo-3d">HELM</span>
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-3 bg-white rounded-2xl shadow-3d-sm"><X className="h-7 w-7" /></button>
         </div>
-
-        <div className="flex-1 overflow-y-auto py-4">
+        <div className="flex-1 overflow-y-auto py-5">
           {navItems.map(item => (
               <SidebarItem 
                 key={item.to}
@@ -218,88 +157,58 @@ const AppLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
               />
           ))}
           {currentUser.role === 'ADMIN' && (
-            <SidebarItem 
-                icon={Settings} 
-                label="إعدادات النظام" 
-                to="/settings" 
-                active={location.pathname.startsWith('/settings')} 
-                onClick={() => setIsSidebarOpen(false)}
-            />
+            <SidebarItem icon={Settings} label="الإعدادات" to="/settings" active={location.pathname.startsWith('/settings')} onClick={() => setIsSidebarOpen(false)} />
           )}
         </div>
-
-        <div className="p-8">
-            <button onClick={logout} className="w-full flex items-center justify-center px-6 py-4 text-sm font-black rounded-2xl text-rose-500 bg-rose-50 hover:bg-rose-100 transition-all card-depth border-rose-100">
-                <LogOut className="h-5 w-5 ml-3" />
-                خروج آمن
+        <div className="p-10">
+            <button onClick={logout} className="w-full flex items-center justify-center py-5 text-sm font-black rounded-[24px] text-rose-500 bg-rose-50 hover:bg-rose-100 transition-all card-3d border-rose-100">
+                <LogOut className="h-6 w-6 ml-4" /> خروج آمن
             </button>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Modern Header */}
-        <header className="h-28 flex items-center justify-between px-8 lg:px-12 z-30">
-            <div className="flex items-center gap-6">
-               <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-4 bg-white shadow-3d rounded-2xl text-slate-600">
-                   <Menu className="h-7 w-7" />
-               </button>
+        <header className="h-32 flex items-center justify-between px-12 z-30">
+            <div className="flex items-center gap-8">
+               <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-5 bg-white shadow-3d-md rounded-[22px]"><Menu className="h-8 w-8" /></button>
                <div>
-                  <h1 className="text-xl font-black text-slate-900 tracking-tight">
-                    {settings.general.officeNameAr}
-                  </h1>
-                  <div className="flex items-center gap-2 mt-1">
-                      <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Platinum Session</span>
-                  </div>
+                  <h1 className="text-2xl font-black text-slate-900 tracking-tight">{settings.general.officeNameAr}</h1>
+                  <div className="flex items-center gap-2 mt-2"><span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span><span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Platinum Edition v3.0</span></div>
                </div>
             </div>
-            
             <GlobalSearch />
-            
-            <div className="flex items-center gap-4">
-                <div className="hidden sm:flex bg-white/50 border border-white p-1 rounded-2xl shadow-3d overflow-hidden">
-                    <div className="px-6 py-2.5 flex items-center gap-3">
-                        <Zap className="h-4 w-4 text-amber-500 fill-amber-500" />
-                        <span className="text-xs font-black text-slate-700">HELM AI v3.0</span>
-                    </div>
+            <div className="flex items-center gap-6">
+                <div className="hidden sm:flex bg-white/50 border-2 border-white px-7 py-3 rounded-[22px] shadow-3d-sm items-center gap-4">
+                    <Zap className="h-5 w-5 text-amber-500 fill-amber-500" /><span className="text-xs font-black text-slate-700">HELM AI Core Active</span>
                 </div>
-                <div className="h-14 w-14 rounded-2xl bg-slate-900 shadow-3d flex items-center justify-center text-white font-black text-xl border-4 border-white">
-                    {currentUser.name.charAt(0)}
-                </div>
+                <div className="h-16 w-16 rounded-[22px] bg-slate-900 shadow-3d-md flex items-center justify-center text-white font-black text-2xl border-4 border-white">{currentUser.name.charAt(0)}</div>
             </div>
         </header>
-
-        <main className="flex-1 overflow-auto p-6 sm:p-10 lg:p-14">
-          <div className="max-w-7xl mx-auto space-y-12">
-             {children}
-          </div>
-        </main>
+        <main className="flex-1 overflow-auto p-12 lg:p-16"><div className="max-w-7xl mx-auto space-y-16">{children}</div></main>
       </div>
     </div>
   );
 };
 
-const App = () => {
-  return (
-    <StoreProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
-          <Route path="/reminders" element={<AppLayout><RemindersPage /></AppLayout>} />
-          <Route path="/legal-hub" element={<AppLayout><LegalHub /></AppLayout>} />
-          <Route path="/clients" element={<AppLayout><Clients /></AppLayout>} />
-          <Route path="/clients/:id" element={<AppLayout><ClientDetails /></AppLayout>} />
-          <Route path="/import" element={<AppLayout><ImportCenter /></AppLayout>} />
-          <Route path="/cases/*" element={<AppLayout><Cases /></AppLayout>} />
-          <Route path="/finance/*" element={<AppLayout><Finance /></AppLayout>} />
-          <Route path="/documents" element={<AppLayout><Documents /></AppLayout>} />
-          <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </HashRouter>
-    </StoreProvider>
-  );
-};
+const App = () => (
+  <StoreProvider>
+    <HashRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
+        <Route path="/reminders" element={<AppLayout><RemindersPage /></AppLayout>} />
+        <Route path="/legal-hub" element={<AppLayout><LegalHub /></AppLayout>} />
+        <Route path="/clients" element={<AppLayout><Clients /></AppLayout>} />
+        <Route path="/clients/:id" element={<AppLayout><ClientDetails /></AppLayout>} />
+        <Route path="/import" element={<AppLayout><ImportCenter /></AppLayout>} />
+        <Route path="/cases/*" element={<AppLayout><Cases /></AppLayout>} />
+        <Route path="/finance/*" element={<AppLayout><Finance /></AppLayout>} />
+        <Route path="/documents" element={<AppLayout><Documents /></AppLayout>} />
+        <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </HashRouter>
+  </StoreProvider>
+);
 
 export default App;

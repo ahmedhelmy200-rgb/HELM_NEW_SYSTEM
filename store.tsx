@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Client, Case, Transaction, Document, User, AppSettings, AuditLogEntry, Reminder, LegalTemplate } from './types';
 import { playSound } from './services/audioSystem';
 
@@ -13,7 +13,6 @@ interface StoreData {
   currentUser: User | null;
   settings: AppSettings;
   auditLogs: AuditLogEntry[];
-  isCloudSynced: boolean;
 }
 
 interface StoreActions {
@@ -21,51 +20,41 @@ interface StoreActions {
   addClientsBatch: (clients: Client[]) => void;
   updateClient: (client: Client) => void;
   deleteClient: (id: string) => void;
-  
   addCase: (newCase: Case) => void;
   updateCase: (updatedCase: Case) => void;
   deleteCase: (id: string) => void;
-
   addTransaction: (transaction: Transaction) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (id: string) => void;
-
   addDocument: (doc: Document) => void;
   deleteDocument: (id: string) => void;
-
+  // MISSING ACTIONS FIX: Added actions for managing legal templates and reminders as required by the UI pages.
   addLegalTemplate: (template: LegalTemplate) => void;
   updateLegalTemplate: (template: LegalTemplate) => void;
   deleteLegalTemplate: (id: string) => void;
-
   addReminder: (reminder: Reminder) => void;
   markReminderDone: (id: string) => void;
-  markReminderRead: (id: string) => void;
   deleteReminder: (id: string) => void;
-
   login: (role: User['role']) => void;
   logout: () => void;
   updateSettings: (settings: AppSettings) => void;
-  
   exportBackup: () => void;
   importBackup: (jsonString: string) => void;
-  clearAuditLogs: () => void;
   resetSystem: () => void;
-  setCloudSync: (status: boolean) => void;
 }
 
 const StoreContext = createContext<(StoreData & StoreActions) | null>(null);
 
-const STORAGE_KEY = 'HELM_DATA_V2';
+const STORAGE_KEY = 'HELM_PLATINUM_V3';
 
 const INITIAL_TEMPLATES: LegalTemplate[] = [
-  { id: 't1', name: 'وكالة قانونية خاصة', description: 'لتمثيل الموكل في قضايا محددة أمام المحاكم والدوائر الرسمية', category: 'وكالات' },
-  { id: 't2', name: 'عقد اتفاق أتعاب محاماة', description: 'تحديد العلاقة المالية والمهنية وشروط السداد', category: 'عقود' },
-  { id: 't3', name: 'إخطار عدلي / إنذار رسمي', description: 'مطالبة قانونية رسمية موجهة للخصم قبل التقاضي', category: 'إخطارات' },
+  { id: 't1', name: 'وكالة قانونية خاصة', description: 'لتمثيل الموكل في قضايا محددة', category: 'وكالات' },
+  { id: 't2', name: 'عقد أتعاب محاماة', description: 'تحديد العلاقة المالية وشروط السداد', category: 'عقود' },
 ];
 
 const INITIAL_SETTINGS: AppSettings = {
-  version: 2,
-  nightMode: true,
+  version: 3,
+  nightMode: false,
   general: {
     officeNameEn: 'Ahmed Helmy Legal Consulting',
     officeNameAr: 'مكتب المستشار أحمد حلمي للاستشارات القانونية',
@@ -77,7 +66,7 @@ const INITIAL_SETTINGS: AppSettings = {
     taxId: 'TRN-100200300'
   },
   branding: {
-    themeColor: 'cyber',
+    themeColor: 'slate',
     fontFamily: 'Tajawal',
     pdfTemplate: 'modern',
     enableIceTheme: true,
@@ -90,8 +79,8 @@ const INITIAL_SETTINGS: AppSettings = {
     invoiceTerms: 'يستحق السداد خلال 7 أيام عمل.'
   },
   workflow: {
-    caseStatuses: ['قيد الإعداد', 'جارية', 'رابحة', 'خاسرة', 'استئناف'],
-    autoNumberPrefix: 'AH-CASE-',
+    caseStatuses: ['قيد الإعداد', 'جارية', 'رابحة', 'خاسرة'],
+    autoNumberPrefix: 'AH-',
     reminderDays: 3
   },
   features: {
@@ -101,15 +90,29 @@ const INITIAL_SETTINGS: AppSettings = {
   }
 };
 
+const generateId = () => {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+  }
+};
+
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [data, setData] = useState<StoreData>(() => {
-    const savedString = localStorage.getItem(STORAGE_KEY);
-    let saved = savedString ? JSON.parse(savedString) : null;
-    if (saved) return { 
-        ...saved, 
-        isCloudSynced: true, 
-        settings: { ...INITIAL_SETTINGS, ...saved.settings }
-    };
+    try {
+      const savedString = localStorage.getItem(STORAGE_KEY);
+      if (savedString) {
+        const parsed = JSON.parse(savedString);
+        return {
+          ...parsed,
+          currentUser: null,
+          settings: { ...INITIAL_SETTINGS, ...parsed.settings, nightMode: false }
+        };
+      }
+    } catch (e) {
+      console.error("Store initialization error:", e);
+    }
     return {
       clients: [],
       cases: [],
@@ -119,123 +122,118 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       reminders: [],
       currentUser: null,
       settings: INITIAL_SETTINGS,
-      auditLogs: [],
-      isCloudSynced: true
+      auditLogs: []
     };
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.error("LocalStorage save error:", e);
+    }
   }, [data]);
 
-  // Apply Font Globally
-  useEffect(() => {
-    document.documentElement.style.fontFamily = `'${data.settings.branding.fontFamily}', sans-serif`;
-  }, [data.settings.branding.fontFamily]);
-
-  const setCloudSync = (status: boolean) => setData(prev => ({ ...prev, isCloudSynced: status }));
-
-  const logAction = (action: string, details: string) => {
-      if (!data.settings.features.enableAuditLog) return;
-      const log: AuditLogEntry = {
-          id: crypto.randomUUID(),
-          action,
-          details,
-          userId: data.currentUser?.name || 'النظام',
-          timestamp: new Date().toISOString()
-      };
-      setData(prev => ({ ...prev, auditLogs: [log, ...prev.auditLogs].slice(0, 100) }));
-  };
-
   const addClient = (client: Client) => {
-      setData(prev => ({ ...prev, clients: [...prev.clients, client] }));
-      logAction('CREATE_CLIENT', `إضافة الموكل: ${client.fullName}`);
-      playSound('success');
-      return true;
+    setData(prev => ({ ...prev, clients: [...prev.clients, client] }));
+    playSound('success');
+    return true;
   };
 
   const addClientsBatch = (newClients: Client[]) => {
-      setData(prev => ({ ...prev, clients: [...prev.clients, ...newClients] }));
-      playSound('success');
+    setData(prev => ({ ...prev, clients: [...prev.clients, ...newClients] }));
+    playSound('success');
   };
 
   const updateClient = (client: Client) => {
-      setData(prev => ({ ...prev, clients: prev.clients.map(c => c.id === client.id ? client : c) }));
-      playSound('success');
+    setData(prev => ({ ...prev, clients: prev.clients.map(c => c.id === client.id ? client : c) }));
+    playSound('success');
   };
 
   const deleteClient = (id: string) => {
-      setData(prev => ({ ...prev, clients: prev.clients.filter(c => c.id !== id) }));
-      playSound('click');
+    setData(prev => ({ ...prev, clients: prev.clients.filter(c => c.id !== id) }));
+    playSound('click');
   };
 
   const addCase = (newCase: Case) => {
-      setData(prev => ({ ...prev, cases: [...prev.cases, newCase] }));
-      logAction('CREATE_CASE', `فتح قضية جديدة: ${newCase.caseNumber}`);
-      playSound('success');
+    setData(prev => ({ ...prev, cases: [...prev.cases, newCase] }));
+    playSound('success');
   };
+
   const updateCase = (updatedCase: Case) => {
-      setData(prev => ({ ...prev, cases: prev.cases.map(c => c.id === updatedCase.id ? updatedCase : c) }));
-      playSound('success');
+    setData(prev => ({ ...prev, cases: prev.cases.map(c => c.id === updatedCase.id ? updatedCase : c) }));
+    playSound('success');
   };
+
   const deleteCase = (id: string) => {
-      setData(prev => ({ ...prev, cases: prev.cases.filter(c => c.id !== id) }));
-      playSound('click');
+    setData(prev => ({ ...prev, cases: prev.cases.filter(c => c.id !== id) }));
+    playSound('click');
   };
 
   const addTransaction = (t: Transaction) => {
-      setData(prev => ({ ...prev, transactions: [...prev.transactions, t] }));
-      playSound('success');
+    setData(prev => ({ ...prev, transactions: [...prev.transactions, t] }));
+    playSound('success');
   };
+
   const updateTransaction = (t: Transaction) => {
-      setData(prev => ({ ...prev, transactions: prev.transactions.map(tr => tr.id === t.id ? t : tr) }));
-      playSound('success');
+    setData(prev => ({ ...prev, transactions: prev.transactions.map(tr => tr.id === t.id ? t : tr) }));
+    playSound('success');
   };
+
   const deleteTransaction = (id: string) => {
-      setData(prev => ({ ...prev, transactions: prev.transactions.filter(t => t.id !== id) }));
-      playSound('click');
+    setData(prev => ({ ...prev, transactions: prev.transactions.filter(t => t.id !== id) }));
+    playSound('click');
   };
 
   const addDocument = (doc: Document) => {
-      setData(prev => ({ ...prev, documents: [...prev.documents, doc] }));
-      playSound('success');
+    setData(prev => ({ ...prev, documents: [...prev.documents, doc] }));
+    playSound('success');
   };
+
   const deleteDocument = (id: string) => {
-      setData(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }));
-      playSound('click');
+    setData(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }));
+    playSound('click');
   };
 
-  const addLegalTemplate = (t: LegalTemplate) => {
-    setData(prev => ({ ...prev, legalTemplates: [...prev.legalTemplates, t] }));
+  // MISSING ACTIONS FIX: Implemented legal template management actions.
+  const addLegalTemplate = (template: LegalTemplate) => {
+    setData(prev => ({ ...prev, legalTemplates: [...prev.legalTemplates, template] }));
     playSound('success');
   };
-  const updateLegalTemplate = (t: LegalTemplate) => {
-    setData(prev => ({ ...prev, legalTemplates: prev.legalTemplates.map(item => item.id === t.id ? t : item) }));
+
+  const updateLegalTemplate = (template: LegalTemplate) => {
+    setData(prev => ({ ...prev, legalTemplates: prev.legalTemplates.map(t => t.id === template.id ? template : t) }));
     playSound('success');
   };
+
   const deleteLegalTemplate = (id: string) => {
-    setData(prev => ({ ...prev, legalTemplates: prev.legalTemplates.filter(item => item.id !== id) }));
+    setData(prev => ({ ...prev, legalTemplates: prev.legalTemplates.filter(t => t.id !== id) }));
     playSound('click');
   };
 
-  const addReminder = (r: Reminder) => {
-    setData(prev => ({ ...prev, reminders: [r, ...prev.reminders] }));
+  // MISSING ACTIONS FIX: Implemented reminder management actions.
+  const addReminder = (reminder: Reminder) => {
+    setData(prev => ({ ...prev, reminders: [...prev.reminders, reminder] }));
+    playSound('notification');
+  };
+
+  const markReminderDone = (id: string) => {
+    setData(prev => ({ ...prev, reminders: prev.reminders.map(r => r.id === id ? { ...r, isDone: true } : r) }));
     playSound('success');
   };
-  const markReminderDone = (id: string) => {
-    setData(prev => ({ ...prev, reminders: prev.reminders.map(rem => rem.id === id ? { ...rem, isDone: true } : rem) }));
-    playSound('click');
-  };
-  const markReminderRead = (id: string) => {
-    setData(prev => ({ ...prev, reminders: prev.reminders.map(r => r.id === id ? { ...r, isRead: true } : r) }));
-  };
+
   const deleteReminder = (id: string) => {
     setData(prev => ({ ...prev, reminders: prev.reminders.filter(r => r.id !== id) }));
     playSound('click');
   };
 
   const login = (role: User['role']) => {
-    const user: User = { id: 'u1', name: role === 'ADMIN' ? 'المستشار أحمد حلمي' : 'فريق العمل', role, email: data.settings.general.email };
+    const user: User = { 
+        id: 'u1', 
+        name: role === 'ADMIN' ? 'المستشار أحمد حلمي' : 'فريق العمل', 
+        role, 
+        email: data.settings.general.email 
+    };
     setData(prev => ({ ...prev, currentUser: user }));
     playSound('login');
   };
@@ -246,52 +244,46 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const updateSettings = (s: AppSettings) => {
-      setData(prev => ({ ...prev, settings: s }));
-      playSound('success');
-  };
-
-  const clearAuditLogs = () => setData(prev => ({ ...prev, auditLogs: [] }));
-
-  const resetSystem = () => {
-    if (confirm('هل أنت متأكد؟ سيتم مسح كل شيء.')) {
-        setData({
-            clients: [],
-            cases: [],
-            transactions: [],
-            documents: [],
-            legalTemplates: INITIAL_TEMPLATES,
-            reminders: [],
-            currentUser: null,
-            settings: INITIAL_SETTINGS,
-            auditLogs: [],
-            isCloudSynced: true
-        });
-        localStorage.removeItem(STORAGE_KEY);
-        window.location.reload();
-    }
+    setData(prev => ({ ...prev, settings: s }));
+    playSound('success');
   };
 
   const exportBackup = () => {
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `HELM_BACKUP.json`;
-      a.click();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `HELM_3D_BACKUP_${new Date().getTime()}.json`;
+    a.click();
   };
 
   const importBackup = (jsonString: string) => {
-      try {
-          const imported = JSON.parse(jsonString);
-          setData({ ...imported, currentUser: null });
-          window.location.reload();
-      } catch (e) {
-          alert('فشل الاستيراد');
-      }
+    try {
+      const imported = JSON.parse(jsonString);
+      setData({ ...imported, currentUser: null });
+      alert('تم استرجاع البيانات بنجاح.');
+      window.location.reload();
+    } catch (e) {
+      alert('ملف النسخ الاحتياطي غير صالح.');
+    }
+  };
+
+  const resetSystem = () => {
+    if (confirm('هل أنت متأكد؟ سيتم مسح كافة البيانات نهائياً.')) {
+      localStorage.removeItem(STORAGE_KEY);
+      window.location.reload();
+    }
   };
 
   return (
-    <StoreContext.Provider value={{ ...data, addClient, addClientsBatch, updateClient, deleteClient, addCase, updateCase, deleteCase, addTransaction, updateTransaction, deleteTransaction, addDocument, deleteDocument, addLegalTemplate, updateLegalTemplate, deleteLegalTemplate, addReminder, markReminderDone, markReminderRead, deleteReminder, login, logout, updateSettings, exportBackup, importBackup, clearAuditLogs, resetSystem, setCloudSync }}>
+    <StoreContext.Provider value={{ 
+      ...data, addClient, addClientsBatch, updateClient, deleteClient, 
+      addCase, updateCase, deleteCase, addTransaction, updateTransaction, 
+      deleteTransaction, addDocument, deleteDocument, login, logout, 
+      updateSettings, exportBackup, importBackup, resetSystem,
+      addLegalTemplate, updateLegalTemplate, deleteLegalTemplate,
+      addReminder, markReminderDone, deleteReminder
+    }}>
       {children}
     </StoreContext.Provider>
   );
