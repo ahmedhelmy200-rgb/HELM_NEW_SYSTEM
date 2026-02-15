@@ -3,7 +3,10 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1e293b">
     <title>نظام حلم لإدارة المكاتب القانونية</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -79,6 +82,7 @@
         font-family: 'Tajawal', sans-serif;
         background-color: #f8fafc;
         overflow-x: hidden;
+        -webkit-tap-highlight-color: transparent;
       }
       
       .logo-3d-gold {
@@ -139,6 +143,33 @@
       ::-webkit-scrollbar-thumb {
         background: #bae6fd; 
         border-radius: 10px;
+      }
+
+      /* Responsive Table Fix */
+      @media (max-width: 640px) {
+        .responsive-table thead {
+          display: none;
+        }
+        .responsive-table tr {
+          display: block;
+          margin-bottom: 1rem;
+          border: 1px solid #e2e8f0;
+          border-radius: 1rem;
+          padding: 1rem;
+          background: white;
+        }
+        .responsive-table td {
+          display: flex;
+          justify-content: space-between;
+          padding: 0.5rem 0;
+          border: none !important;
+        }
+        .responsive-table td::before {
+          content: attr(data-label);
+          font-weight: 800;
+          color: #64748b;
+          font-size: 0.75rem;
+        }
       }
     </style>
   <script type="importmap">
