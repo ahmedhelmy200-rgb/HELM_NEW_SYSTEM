@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StoreProvider, useStore } from './store';
-import { HashRouter, Routes, Route, Navigate, useLocation, Link } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation, Link, useNavigate } from 'react-router-dom';
 import { 
     LayoutDashboard, Users, Briefcase, FileText, DollarSign, Settings, 
-    LogOut, Bell, CheckCircle, LucideIcon, Trash2, Database, Cloud, CloudOff, RefreshCw,
-    ExternalLink, Globe, Menu, X
+    LogOut, Bell, Menu, X, Database, Globe, Zap, Search, ArrowLeft,
+    ChevronLeft, FileDigit, Gavel
 } from 'lucide-react';
 
 // Pages
@@ -21,91 +21,161 @@ import SettingsPage from './pages/Settings';
 import ImportCenter from './pages/ImportCenter';
 import LegalHub from './pages/LegalHub';
 
-const SidebarItem = ({ icon: Icon, label, to, active, onClick }: { icon: LucideIcon, label: string, to: string, active: boolean, onClick?: () => void }) => (
+const SidebarItem = ({ icon: Icon, label, to, active, onClick }: { icon: any, label: string, to: string, active: boolean, onClick?: () => void }) => (
   <Link 
     to={to} 
     onClick={onClick}
-    className={`flex items-center px-6 py-3 text-sm font-bold transition-all rounded-xl mx-2 my-0.5 ${active ? 'bg-brand-secondary text-brand-primary' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+    className={`flex items-center px-6 py-4 text-sm font-black transition-all rounded-2xl mx-4 my-1.5 ${active ? 'bg-slate-900 text-white shadow-3d translate-x-[-8px]' : 'text-slate-500 hover:bg-white hover:shadow-sm hover:text-slate-900'}`}
   >
-    <Icon className={`h-5 w-5 ml-3 ${active ? 'text-brand-accent' : ''}`} />
+    <Icon className={`h-5 w-5 ml-4 ${active ? 'text-white animate-pulse' : 'text-slate-400'}`} />
     {label}
   </Link>
 );
 
-const NotificationBell = () => {
-    const { reminders, markReminderRead, markReminderDone } = useStore();
+const GlobalSearch = () => {
+    const { clients, cases, documents, transactions } = useStore();
+    const [query, setQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
-    
-    const unreadCount = reminders.filter(r => !r.isRead && !r.isDone).length;
-    const activeReminders = reminders.filter(r => !r.isDone).slice(0, 5);
+    const navigate = useNavigate();
+    const searchRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filteredClients = query ? clients.filter(c => c.fullName.toLowerCase().includes(query.toLowerCase()) || c.phone?.includes(query)) : [];
+    const filteredCases = query ? cases.filter(c => c.title.toLowerCase().includes(query.toLowerCase()) || c.caseNumber.includes(query)) : [];
+    const filteredDocs = query ? documents.filter(d => d.title.toLowerCase().includes(query.toLowerCase())) : [];
+    const filteredTx = query ? transactions.filter(t => t.description.toLowerCase().includes(query.toLowerCase())) : [];
+
+    const hasResults = filteredClients.length > 0 || filteredCases.length > 0 || filteredDocs.length > 0 || filteredTx.length > 0;
+
+    const handleSelect = (to: string) => {
+        setQuery('');
+        setIsOpen(false);
+        navigate(to);
+    };
 
     return (
-        <div className="relative">
-            <button 
-                onClick={() => { setIsOpen(!isOpen); }}
-                className="p-2 text-gray-400 hover:text-slate-600 focus:outline-none relative transition-transform active:scale-90"
-            >
-                <Bell className="h-6 w-6" />
-                {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 block h-4 w-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center font-bold ring-2 ring-white animate-pulse">
-                        {unreadCount}
-                    </span>
+        <div ref={searchRef} className="relative flex-1 max-w-xl mx-8 hidden md:block z-50">
+            <div className={`relative flex items-center bg-white rounded-2xl border transition-all duration-300 ${isOpen ? 'shadow-3d border-slate-900' : 'border-slate-100 shadow-sm'}`}>
+                <Search className={`absolute right-4 h-5 w-5 transition-colors ${isOpen ? 'text-slate-900' : 'text-slate-400'}`} />
+                <input
+                    type="text"
+                    placeholder="ابحث عن موكل، رقم قضية، أو مستند..."
+                    className="w-full pr-12 pl-4 py-3.5 bg-transparent outline-none font-bold text-sm"
+                    value={query}
+                    onChange={(e) => {
+                        setQuery(e.target.value);
+                        setIsOpen(true);
+                    }}
+                    onFocus={() => setIsOpen(true)}
+                />
+                {query && (
+                    <button onClick={() => setQuery('')} className="absolute left-4 p-1 hover:bg-slate-100 rounded-full">
+                        <X className="h-4 w-4 text-slate-400" />
+                    </button>
                 )}
-            </button>
+            </div>
 
-            {isOpen && (
-                <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>
-                    <div className="absolute left-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="p-4 bg-slate-50 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="font-bold text-slate-800 text-sm">التنبيهات العاجلة</h3>
-                            <Link to="/reminders" className="text-xs text-blue-600 hover:underline" onClick={() => setIsOpen(false)}>كل التذكيرات</Link>
+            {isOpen && query && (
+                <div className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-xl rounded-3xl border border-white/50 shadow-3xl max-h-[70vh] overflow-y-auto animate-in fade-in zoom-in duration-200 card-depth">
+                    {!hasResults ? (
+                        <div className="p-10 text-center">
+                            <Search className="h-10 w-10 text-slate-200 mx-auto mb-3" />
+                            <p className="text-sm font-black text-slate-400">لم يتم العثور على أي نتائج تطابق "{query}"</p>
                         </div>
-                        <div className="max-h-96 overflow-y-auto">
-                            {activeReminders.length === 0 ? (
-                                <div className="p-8 text-center text-gray-400 text-sm">
-                                    لا توجد تنبيهات جديدة حالياً
-                                </div>
-                            ) : (
-                                activeReminders.map(r => (
-                                    <div 
-                                        key={r.id} 
-                                        className={`p-4 border-b border-gray-50 hover:bg-slate-50 transition-colors cursor-pointer ${!r.isRead ? 'bg-blue-50/30' : ''}`}
-                                        onClick={() => markReminderRead(r.id)}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <span className={`h-2 w-2 rounded-full mt-1.5 ${r.priority === 'HIGH' ? 'bg-red-500' : 'bg-amber-500'}`}></span>
-                                            <div className="flex-1 mr-3 text-right">
-                                                <p className="text-sm font-bold text-slate-900">{r.title}</p>
-                                                <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{r.description}</p>
-                                                <p className="text-[10px] text-gray-400 mt-1">{new Date(r.date).toLocaleDateString('ar-SA')}</p>
+                    ) : (
+                        <div className="p-4 space-y-6">
+                            {filteredClients.length > 0 && (
+                                <div>
+                                    <h4 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">الموكلين</h4>
+                                    {filteredClients.map(c => (
+                                        <button key={c.id} onClick={() => handleSelect(`/clients/${c.id}`)} className="w-full flex items-center p-3 hover:bg-slate-50 rounded-xl transition-all group text-right">
+                                            <div className="h-10 w-10 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black text-xs ml-3 group-hover:scale-110 transition-transform">
+                                                <Users className="h-5 w-5" />
                                             </div>
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); markReminderDone(r.id); }}
-                                                className="p-1 text-gray-300 hover:text-green-600"
-                                            >
-                                                <CheckCircle className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))
+                                            <div className="flex-1">
+                                                <p className="text-sm font-black text-slate-900">{c.fullName}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold">{c.phone || 'بدون هاتف'}</p>
+                                            </div>
+                                            <ChevronLeft className="h-4 w-4 text-slate-300" />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {filteredCases.length > 0 && (
+                                <div>
+                                    <h4 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">القضايا</h4>
+                                    {filteredCases.map(c => (
+                                        <button key={c.id} onClick={() => handleSelect(`/cases`)} className="w-full flex items-center p-3 hover:bg-slate-50 rounded-xl transition-all group text-right">
+                                            <div className="h-10 w-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-xs ml-3 group-hover:scale-110 transition-transform">
+                                                <Gavel className="h-5 w-5" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-black text-slate-900">{c.title}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold">رقم: {c.caseNumber}</p>
+                                            </div>
+                                            <ChevronLeft className="h-4 w-4 text-slate-300" />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {filteredDocs.length > 0 && (
+                                <div>
+                                    <h4 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">المستندات</h4>
+                                    {filteredDocs.map(d => (
+                                        <button key={d.id} onClick={() => handleSelect(`/documents`)} className="w-full flex items-center p-3 hover:bg-slate-50 rounded-xl transition-all group text-right">
+                                            <div className="h-10 w-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white font-black text-xs ml-3 group-hover:scale-110 transition-transform">
+                                                <FileText className="h-5 w-5" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-black text-slate-900">{d.title}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold">{new Date(d.createdAt).toLocaleDateString('ar-SA')}</p>
+                                            </div>
+                                            <ChevronLeft className="h-4 w-4 text-slate-300" />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {filteredTx.length > 0 && (
+                                <div>
+                                    <h4 className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">المعاملات المالية</h4>
+                                    {filteredTx.map(t => (
+                                        <button key={t.id} onClick={() => handleSelect(`/finance`)} className="w-full flex items-center p-3 hover:bg-slate-50 rounded-xl transition-all group text-right">
+                                            <div className="h-10 w-10 bg-amber-500 rounded-lg flex items-center justify-center text-white font-black text-xs ml-3 group-hover:scale-110 transition-transform">
+                                                <DollarSign className="h-5 w-5" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-black text-slate-900">{t.description}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold">{t.amount.toLocaleString()} د.إ</p>
+                                            </div>
+                                            <ChevronLeft className="h-4 w-4 text-slate-300" />
+                                        </button>
+                                    ))}
+                                </div>
                             )}
                         </div>
-                    </div>
-                </>
+                    )}
+                </div>
             )}
         </div>
     );
 };
 
 const AppLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
-  const { currentUser, logout, settings, isCloudSynced } = useStore();
+  const { currentUser, logout, settings } = useStore();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', settings.branding.themeColor);
-  }, [settings.branding.themeColor]);
 
   if (!currentUser) {
     return <Navigate to="/login" />;
@@ -113,38 +183,30 @@ const AppLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
 
   const navItems = [
     { icon: LayoutDashboard, label: "لوحة التحكم", to: "/" },
-    { icon: Bell, label: "التذكيرات", to: "/reminders" },
+    { icon: Bell, label: "مركز التنبيهات", to: "/reminders" },
+    { icon: Users, label: "قاعدة الموكلين", to: "/clients" },
+    { icon: Briefcase, label: "إدارة القضايا", to: "/cases" },
+    { icon: FileText, label: "أرشيف المستندات", to: "/documents" },
+    { icon: DollarSign, label: "المالية والمحاسبة", to: "/finance" },
     { icon: Globe, label: "روابط حكومية", to: "/legal-hub" },
-    { icon: Users, label: "الموكلين", to: "/clients" },
     { icon: Database, label: "ترحيل البيانات", to: "/import" },
-    { icon: Briefcase, label: "القضايا", to: "/cases" },
-    { icon: DollarSign, label: "المالية", to: "/finance" },
-    { icon: FileText, label: "المستندات", to: "/documents" },
   ];
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden" data-theme={settings.branding.themeColor}>
-      {/* Mobile Backdrop */}
-      {isSidebarOpen && (
-        <div 
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-        ></div>
-      )}
-
-      {/* Sidebar */}
+    <div className="flex h-screen overflow-hidden">
+      {/* Sidebar - Platinum 3D Style */}
       <div className={`
-        fixed inset-y-0 right-0 w-64 bg-white border-l border-gray-100 flex flex-col z-50 transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0
-        ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full lg:translate-x-0'}
+        fixed inset-y-0 right-0 w-80 sidebar-blur border-l border-white/50 flex flex-col z-50 transition-all duration-500
+        ${isSidebarOpen ? 'translate-x-0 shadow-3xl' : 'translate-x-full lg:translate-x-0'}
       `}>
-        <div className="h-20 flex items-center justify-between px-6 border-b border-gray-50 flex-shrink-0">
-          <span className="text-3xl logo-3d-gold">HELM</span>
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-slate-900">
+        <div className="h-28 flex items-center justify-between px-10">
+          <span className="text-4xl logo-3d">HELM</span>
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-slate-400 p-2 hover:bg-white rounded-full">
               <X className="h-6 w-6" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-6">
+        <div className="flex-1 overflow-y-auto py-4">
           {navItems.map(item => (
               <SidebarItem 
                 key={item.to}
@@ -158,7 +220,7 @@ const AppLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
           {currentUser.role === 'ADMIN' && (
             <SidebarItem 
                 icon={Settings} 
-                label="الإعدادات" 
+                label="إعدادات النظام" 
                 to="/settings" 
                 active={location.pathname.startsWith('/settings')} 
                 onClick={() => setIsSidebarOpen(false)}
@@ -166,59 +228,49 @@ const AppLayout: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-100 bg-slate-50/50">
-            <div className="flex items-center mb-4 px-2">
-                <div className="h-10 w-10 rounded-2xl bg-brand-accent flex items-center justify-center text-white font-black text-lg shadow-lg shadow-brand-secondary">
-                    {currentUser.name.charAt(0)}
-                </div>
-                <div className="mr-3 overflow-hidden">
-                    <p className="text-sm font-black text-slate-900 truncate">{currentUser.name}</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">{currentUser.role === 'ADMIN' ? 'المدير العام' : currentUser.role === 'ACCOUNTANT' ? 'المحاسب المعتمد' : 'المساعد الإداري'}</p>
-                </div>
-            </div>
-            <button onClick={logout} className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-xs font-black rounded-xl text-slate-500 bg-white shadow-sm hover:bg-slate-100 transition-all border border-slate-200">
-                <LogOut className="h-4 w-4 ml-2" />
-                تسجيل الخروج
+        <div className="p-8">
+            <button onClick={logout} className="w-full flex items-center justify-center px-6 py-4 text-sm font-black rounded-2xl text-rose-500 bg-rose-50 hover:bg-rose-100 transition-all card-depth border-rose-100">
+                <LogOut className="h-5 w-5 ml-3" />
+                خروج آمن
             </button>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 flex items-center justify-between px-4 sm:px-6 md:px-10 sticky top-0 z-30">
-            <div className="flex items-center gap-4">
-               <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
-                   <Menu className="h-6 w-6" />
+        {/* Modern Header */}
+        <header className="h-28 flex items-center justify-between px-8 lg:px-12 z-30">
+            <div className="flex items-center gap-6">
+               <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-4 bg-white shadow-3d rounded-2xl text-slate-600">
+                   <Menu className="h-7 w-7" />
                </button>
-               <div className="lg:hidden">
-                    <span className="text-xl sm:text-2xl logo-3d-gold">HELM</span>
-               </div>
-               <h1 className="text-lg font-black text-slate-800 hidden lg:block tracking-tight truncate max-w-xs xl:max-w-md">
-                  {settings.general.officeNameAr}
-               </h1>
-               <div className="hidden sm:flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-                   {isCloudSynced ? (
-                       <>
-                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                        <span className="text-[10px] font-black text-slate-500">سحابة نشطة</span>
-                       </>
-                   ) : (
-                       <>
-                        <CloudOff className="h-3 w-3 text-rose-500" />
-                        <span className="text-[10px] font-black text-slate-500">محلي</span>
-                       </>
-                   )}
+               <div>
+                  <h1 className="text-xl font-black text-slate-900 tracking-tight">
+                    {settings.general.officeNameAr}
+                  </h1>
+                  <div className="flex items-center gap-2 mt-1">
+                      <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Platinum Session</span>
+                  </div>
                </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-                <div className="hidden xl:flex items-center gap-2 text-slate-300 ml-4">
-                    <RefreshCw className="h-3 w-3 animate-spin-slow" />
-                    <span className="text-[10px] font-black">AI Safe Update</span>
+            
+            <GlobalSearch />
+            
+            <div className="flex items-center gap-4">
+                <div className="hidden sm:flex bg-white/50 border border-white p-1 rounded-2xl shadow-3d overflow-hidden">
+                    <div className="px-6 py-2.5 flex items-center gap-3">
+                        <Zap className="h-4 w-4 text-amber-500 fill-amber-500" />
+                        <span className="text-xs font-black text-slate-700">HELM AI v3.0</span>
+                    </div>
                 </div>
-                <NotificationBell />
+                <div className="h-14 w-14 rounded-2xl bg-slate-900 shadow-3d flex items-center justify-center text-white font-black text-xl border-4 border-white">
+                    {currentUser.name.charAt(0)}
+                </div>
             </div>
         </header>
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-10">
-          <div className="max-w-7xl mx-auto">
+
+        <main className="flex-1 overflow-auto p-6 sm:p-10 lg:p-14">
+          <div className="max-w-7xl mx-auto space-y-12">
              {children}
           </div>
         </main>

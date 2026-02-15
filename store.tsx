@@ -55,18 +55,17 @@ interface StoreActions {
 
 const StoreContext = createContext<(StoreData & StoreActions) | null>(null);
 
-const STORAGE_KEY = 'HELM_DATA_V1';
+const STORAGE_KEY = 'HELM_DATA_V2';
 
 const INITIAL_TEMPLATES: LegalTemplate[] = [
   { id: 't1', name: 'وكالة قانونية خاصة', description: 'لتمثيل الموكل في قضايا محددة أمام المحاكم والدوائر الرسمية', category: 'وكالات' },
   { id: 't2', name: 'عقد اتفاق أتعاب محاماة', description: 'تحديد العلاقة المالية والمهنية وشروط السداد', category: 'عقود' },
   { id: 't3', name: 'إخطار عدلي / إنذار رسمي', description: 'مطالبة قانونية رسمية موجهة للخصم قبل التقاضي', category: 'إخطارات' },
-  { id: 't4', name: 'اتفاقية تسوية ودية', description: 'لحل النزاعات ودياً وتجنب إجراءات التقاضي الطويلة', category: 'تسويات' },
-  { id: 't5', name: 'مذكرة دفاع أولية', description: 'صياغة أولية للرد على ادعاءات الخصم', category: 'مذكرات' },
 ];
 
 const INITIAL_SETTINGS: AppSettings = {
-  version: 1,
+  version: 2,
+  nightMode: true,
   general: {
     officeNameEn: 'Ahmed Helmy Legal Consulting',
     officeNameAr: 'مكتب المستشار أحمد حلمي للاستشارات القانونية',
@@ -78,9 +77,10 @@ const INITIAL_SETTINGS: AppSettings = {
     taxId: 'TRN-100200300'
   },
   branding: {
-    themeColor: 'slate',
-    pdfTemplate: 'classic',
-    enableIceTheme: false,
+    themeColor: 'cyber',
+    fontFamily: 'Tajawal',
+    pdfTemplate: 'modern',
+    enableIceTheme: true,
     footerText: 'سري للغاية - مكتب المستشار أحمد حلمي'
   },
   finance: {
@@ -105,7 +105,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [data, setData] = useState<StoreData>(() => {
     const savedString = localStorage.getItem(STORAGE_KEY);
     let saved = savedString ? JSON.parse(savedString) : null;
-    if (saved) return { ...saved, isCloudSynced: true, legalTemplates: saved.legalTemplates || INITIAL_TEMPLATES };
+    if (saved) return { 
+        ...saved, 
+        isCloudSynced: true, 
+        settings: { ...INITIAL_SETTINGS, ...saved.settings }
+    };
     return {
       clients: [],
       cases: [],
@@ -124,46 +128,12 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [data]);
 
-  const setCloudSync = (status: boolean) => setData(prev => ({ ...prev, isCloudSynced: status }));
-
-  const checkReminders = useCallback(() => {
-    const now = new Date();
-    const newReminders: Reminder[] = [];
-
-    data.cases.forEach(c => {
-      if (c.nextHearingDate) {
-        const hDate = new Date(c.nextHearingDate);
-        const diffDays = Math.ceil((hDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
-        if (diffDays <= data.settings.workflow.reminderDays && diffDays >= 0) {
-          const exists = data.reminders.find(r => r.relatedId === c.id && r.type === 'CASE' && !r.isDone);
-          if (!exists) {
-            newReminders.push({
-              id: crypto.randomUUID(),
-              title: `جلسة قادمة: ${c.caseNumber}`,
-              description: `موعد الجلسة في ${c.court} خلال ${diffDays} يوم.`,
-              date: c.nextHearingDate,
-              isRead: false,
-              isDone: false,
-              priority: diffDays <= 1 ? 'HIGH' : 'MEDIUM',
-              type: 'CASE',
-              relatedId: c.id
-            });
-          }
-        }
-      }
-    });
-
-    if (newReminders.length > 0) {
-      setData(prev => ({ ...prev, reminders: [...newReminders, ...prev.reminders] }));
-      playSound('notification');
-    }
-  }, [data.cases, data.reminders, data.settings.workflow.reminderDays]);
-
+  // Apply Font Globally
   useEffect(() => {
-    checkReminders();
-    const interval = setInterval(checkReminders, 120000);
-    return () => clearInterval(interval);
-  }, [checkReminders]);
+    document.documentElement.style.fontFamily = `'${data.settings.branding.fontFamily}', sans-serif`;
+  }, [data.settings.branding.fontFamily]);
+
+  const setCloudSync = (status: boolean) => setData(prev => ({ ...prev, isCloudSynced: status }));
 
   const logAction = (action: string, details: string) => {
       if (!data.settings.features.enableAuditLog) return;
@@ -178,12 +148,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const addClient = (client: Client) => {
-      const exists = data.clients.find(c => c.fullName === client.fullName);
-      if (exists) {
-          playSound('error');
-          alert(`خطأ: هذا الموكل مسجل مسبقاً`);
-          return false;
-      }
       setData(prev => ({ ...prev, clients: [...prev.clients, client] }));
       logAction('CREATE_CLIENT', `إضافة الموكل: ${client.fullName}`);
       playSound('success');
@@ -192,20 +156,16 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const addClientsBatch = (newClients: Client[]) => {
       setData(prev => ({ ...prev, clients: [...prev.clients, ...newClients] }));
-      logAction('BATCH_IMPORT', `استيراد جماعي لـ ${newClients.length} موكل`);
       playSound('success');
   };
 
   const updateClient = (client: Client) => {
       setData(prev => ({ ...prev, clients: prev.clients.map(c => c.id === client.id ? client : c) }));
-      logAction('UPDATE_CLIENT', `تحديث بيانات الموكل: ${client.fullName}`);
       playSound('success');
   };
 
   const deleteClient = (id: string) => {
-      const client = data.clients.find(c => c.id === id);
       setData(prev => ({ ...prev, clients: prev.clients.filter(c => c.id !== id) }));
-      logAction('DELETE_CLIENT', `حذف الموكل: ${client?.fullName}`);
       playSound('click');
   };
 
@@ -216,7 +176,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
   const updateCase = (updatedCase: Case) => {
       setData(prev => ({ ...prev, cases: prev.cases.map(c => c.id === updatedCase.id ? updatedCase : c) }));
-      logAction('UPDATE_CASE', `تحديث القضية رقم: ${updatedCase.caseNumber}`);
       playSound('success');
   };
   const deleteCase = (id: string) => {
@@ -226,7 +185,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const addTransaction = (t: Transaction) => {
       setData(prev => ({ ...prev, transactions: [...prev.transactions, t] }));
-      logAction('CREATE_TX', `تسجيل حركة مالية: ${t.description}`);
       playSound('success');
   };
   const updateTransaction = (t: Transaction) => {
@@ -249,17 +207,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const addLegalTemplate = (t: LegalTemplate) => {
     setData(prev => ({ ...prev, legalTemplates: [...prev.legalTemplates, t] }));
-    logAction('CREATE_TEMPLATE', `إضافة قالب جديد: ${t.name}`);
     playSound('success');
   };
   const updateLegalTemplate = (t: LegalTemplate) => {
     setData(prev => ({ ...prev, legalTemplates: prev.legalTemplates.map(item => item.id === t.id ? t : item) }));
-    logAction('UPDATE_TEMPLATE', `تحديث القالب: ${t.name}`);
     playSound('success');
   };
   const deleteLegalTemplate = (id: string) => {
     setData(prev => ({ ...prev, legalTemplates: prev.legalTemplates.filter(item => item.id !== id) }));
-    logAction('DELETE_TEMPLATE', `حذف القالب المعرف بـ: ${id}`);
     playSound('click');
   };
 
@@ -268,7 +223,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     playSound('success');
   };
   const markReminderDone = (id: string) => {
-    setData(prev => ({ ...prev, reminders: prev.reminders.map(rem => rem.id === id ? { ...rem, isDone: true, isRead: true } : rem) }));
+    setData(prev => ({ ...prev, reminders: prev.reminders.map(rem => rem.id === id ? { ...rem, isDone: true } : rem) }));
     playSound('click');
   };
   const markReminderRead = (id: string) => {
@@ -280,9 +235,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const login = (role: User['role']) => {
-    const user: User = { id: 'u1', name: role === 'ADMIN' ? 'المستشار أحمد حلمي' : role === 'ACCOUNTANT' ? 'المحاسب' : 'المساعد الإداري', role, email: data.settings.general.email };
+    const user: User = { id: 'u1', name: role === 'ADMIN' ? 'المستشار أحمد حلمي' : 'فريق العمل', role, email: data.settings.general.email };
     setData(prev => ({ ...prev, currentUser: user }));
-    logAction('LOGIN', `تسجيل دخول: ${user.name}`);
     playSound('login');
   };
 
@@ -299,7 +253,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const clearAuditLogs = () => setData(prev => ({ ...prev, auditLogs: [] }));
 
   const resetSystem = () => {
-    if (confirm('تحذير: سيتم مسح كافة البيانات. هل أنت متأكد؟')) {
+    if (confirm('هل أنت متأكد؟ سيتم مسح كل شيء.')) {
         setData({
             clients: [],
             cases: [],
@@ -318,45 +272,21 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const exportBackup = () => {
-      const backupData = { 
-          source: 'HELM_LEGAL_OS',
-          timestamp: new Date().toISOString(), 
-          data: data,
-          schemaVersion: INITIAL_SETTINGS.version 
-      };
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `HELM_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `HELM_BACKUP.json`;
       a.click();
-      logAction('EXPORT_BACKUP', 'تم تصدير نسخة احتياطية من النظام');
   };
 
   const importBackup = (jsonString: string) => {
       try {
           const imported = JSON.parse(jsonString);
-          
-          // Validation logic for data integrity
-          if (!imported.data || !imported.data.clients || !imported.data.cases) {
-              throw new Error("تنسيق ملف النسخة الاحتياطية غير صالح.");
-          }
-
-          // Merge or Replace logic - Here we replace for full restoration
-          const newData = {
-              ...imported.data,
-              currentUser: null, // Force re-login for security
-              isCloudSynced: true
-          };
-
-          setData(newData);
-          logAction('IMPORT_BACKUP', `تم استعادة البيانات من نسخة بتاريخ ${imported.timestamp}`);
-          playSound('success');
-          alert("تم استعادة البيانات بنجاح. يرجى تسجيل الدخول مجدداً.");
+          setData({ ...imported, currentUser: null });
           window.location.reload();
-      } catch (e: any) {
-          playSound('error');
-          alert(`فشل الاستيراد: ${e.message}`);
+      } catch (e) {
+          alert('فشل الاستيراد');
       }
   };
 

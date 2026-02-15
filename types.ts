@@ -20,8 +20,8 @@ export interface Client {
   idNumber?: string;
   idType?: string;
   nationality?: string;
-  category?: string; // موكل / وكيل
-  commissionAmount?: number; // مبلغ العمولة الخاص (مخفي عن غير الإداريين)
+  category?: string; 
+  commissionAmount?: number;
   createdAt: string;
 }
 
@@ -88,6 +88,7 @@ export interface Reminder {
 
 export interface AppSettings {
   version: number;
+  nightMode: boolean;
   general: {
     officeNameEn: string;
     officeNameAr: string;
@@ -99,12 +100,13 @@ export interface AppSettings {
     taxId: string;
   };
   branding: {
-    themeColor: 'slate' | 'blue' | 'indigo' | 'rose' | 'emerald';
+    themeColor: 'slate' | 'blue' | 'indigo' | 'rose' | 'emerald' | 'cyber';
+    fontFamily: 'Tajawal' | 'Cairo' | 'Almarai' | 'Ubuntu';
     logoUrl?: string;
     stampUrl?: string;
     signatureUrl?: string;
     pdfTemplate: 'classic' | 'modern';
-    enableIceTheme: boolean; // الخاصية الجديدة
+    enableIceTheme: boolean;
     footerText: string;
   };
   finance: {

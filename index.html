@@ -6,170 +6,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1e293b">
-    <title>نظام حلم لإدارة المكاتب القانونية</title>
+    <meta name="theme-color" content="#ffffff">
+    <title>نظام حلم - Platinum Legal Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
-            fontFamily: {
-              sans: ['Tajawal', 'sans-serif'],
-            },
             colors: {
-              brand: {
-                primary: 'var(--brand-primary)',
-                secondary: 'var(--brand-secondary)',
-                accent: 'var(--brand-accent)',
+              platinum: {
                 50: '#f8fafc',
                 100: '#f1f5f9',
-                500: '#64748b',
-                600: '#475569',
-                700: '#334155',
-                800: '#1e293b',
+                200: '#e2e8f0',
+                300: '#cbd5e1',
                 900: '#0f172a',
               },
-              ice: {
-                50: '#f0f9ff',
-                100: '#e0f2fe',
-                200: '#bae6fd',
-                500: '#0ea5e9'
+              gold: {
+                DEFAULT: '#c5a059',
+                light: '#e5c07b',
+                dark: '#a38048'
               }
             },
-            animation: {
-              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'float': 'float 3s ease-in-out infinite',
-              'shimmer': 'shimmer 2s linear infinite',
-              'spin-slow': 'spin 8s linear infinite',
-              'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
-            },
-            keyframes: {
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' },
-              },
-              shimmer: {
-                '0%': { backgroundPosition: '-200% 0' },
-                '100%': { backgroundPosition: '200% 0' },
-              },
-              shake: {
-                '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
-                '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
-                '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
-                '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
-              }
+            boxShadow: {
+              '3d': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02), inset 0 2px 4px 0 rgba(255, 255, 255, 0.8)',
+              '3d-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03), inset 0 2px 4px 0 rgba(255, 255, 255, 0.9)',
+              '3d-pressed': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.05)',
             }
           }
         }
       }
     </script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Cairo:wght@400;700;900&family=Almarai:wght@300;400;700;800&display=swap');
       
       :root {
-        --brand-primary: #1e293b;
-        --brand-secondary: #f1f5f9;
-        --brand-accent: #334155;
+        --brand-accent: #0f172a;
+        font-family: 'Tajawal', sans-serif;
       }
-
-      [data-theme="slate"] { --brand-primary: #1e293b; --brand-secondary: #f1f5f9; --brand-accent: #334155; }
-      [data-theme="blue"] { --brand-primary: #1d4ed8; --brand-secondary: #eff6ff; --brand-accent: #2563eb; }
-      [data-theme="indigo"] { --brand-primary: #4338ca; --brand-secondary: #eef2ff; --brand-accent: #4f46e5; }
-      [data-theme="rose"] { --brand-primary: #be123c; --brand-secondary: #fff1f2; --brand-accent: #e11d48; }
-      [data-theme="emerald"] { --brand-primary: #047857; --brand-secondary: #ecfdf5; --brand-accent: #059669; }
 
       body {
-        font-family: 'Tajawal', sans-serif;
-        background-color: #f8fafc;
-        overflow-x: hidden;
-        -webkit-tap-highlight-color: transparent;
+        background: linear-gradient(135deg, #f1f5f9 0%, #ffffff 100%);
+        background-attachment: fixed;
+        color: #1e293b;
+        min-height: 100vh;
+      }
+
+      /* 3D Glassmorphism Effect */
+      .glass-3d {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Extruded 3D Logo */
+      .logo-3d {
+        font-weight: 900;
+        color: #0f172a;
+        text-shadow: 
+          1px 1px 0px #cbd5e1,
+          2px 2px 0px #cbd5e1,
+          3px 3px 10px rgba(0,0,0,0.1);
+      }
+
+      .card-depth {
+        border-bottom: 4px solid #e2e8f0;
+        border-right: 2px solid #e2e8f0;
+        transition: all 0.2s ease-out;
+      }
+      .card-depth:hover {
+        transform: translateY(-4px);
+        border-bottom-width: 6px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Custom Scrollbar for Luxury */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { 
+        background: #cbd5e1; 
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
       }
       
-      .logo-3d-gold {
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: -0.05em;
-        background: linear-gradient(to bottom, #fde68a 0%, #fbbf24 20%, #d97706 45%, #b45309 50%, #92400e 60%, #78350f 80%, #451a03 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.1));
+      .sidebar-blur {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(30px);
       }
 
-      /* Frosted Glass Background */
-      .frosted-bg {
-        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #ffffff 100%);
-        position: fixed;
-        inset: 0;
-        z-index: -1;
+      input, select, textarea {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
+        transition: all 0.2s !important;
       }
-
-      .ice-mist {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: url('https://www.transparenttextures.com/patterns/foggy-birds.png');
-        opacity: 0.1;
-        pointer-events: none;
-      }
-
-      .glass-shard {
-        backdrop-filter: blur(8px);
-        background: rgba(255, 255, 255, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.6);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-        pointer-events: none;
-      }
-
-      .icy-button {
-        backdrop-filter: blur(12px);
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        box-shadow: 0 10px 30px rgba(14, 165, 233, 0.1);
-      }
-
-      .icy-button:hover {
-        background: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 15px 40px rgba(14, 165, 233, 0.2);
-        transform: translateY(-2px);
-      }
-
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #f0f9ff; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #bae6fd; 
-        border-radius: 10px;
-      }
-
-      /* Responsive Table Fix */
-      @media (max-width: 640px) {
-        .responsive-table thead {
-          display: none;
-        }
-        .responsive-table tr {
-          display: block;
-          margin-bottom: 1rem;
-          border: 1px solid #e2e8f0;
-          border-radius: 1rem;
-          padding: 1rem;
-          background: white;
-        }
-        .responsive-table td {
-          display: flex;
-          justify-content: space-between;
-          padding: 0.5rem 0;
-          border: none !important;
-        }
-        .responsive-table td::before {
-          content: attr(data-label);
-          font-weight: 800;
-          color: #64748b;
-          font-size: 0.75rem;
-        }
+      input:focus, select:focus {
+        border-color: #0f172a !important;
+        box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.05) !important;
+        transform: translateY(-1px);
       }
     </style>
   <script type="importmap">
