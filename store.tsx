@@ -28,7 +28,6 @@ interface StoreActions {
   deleteTransaction: (id: string) => void;
   addDocument: (doc: Document) => void;
   deleteDocument: (id: string) => void;
-  // MISSING ACTIONS FIX: Added actions for managing legal templates and reminders as required by the UI pages.
   addLegalTemplate: (template: LegalTemplate) => void;
   updateLegalTemplate: (template: LegalTemplate) => void;
   deleteLegalTemplate: (id: string) => void;
@@ -90,13 +89,85 @@ const INITIAL_SETTINGS: AppSettings = {
   }
 };
 
-const generateId = () => {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    return Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-  }
-};
+// دمج قائمة الموكلين الـ 64 مع منع التكرار
+const INITIAL_CLIENTS: Client[] = [
+  {
+    id: 'eid_78419904400406', // تم توحيد المعرف بناءً على الهوية الإماراتية
+    fullName: 'سمر اسامة العبد',
+    email: 'samar.osama@example.com',
+    phone: '05XXXXXXX',
+    address: 'المجاز، الشارقة',
+    idNumber: '78419904400406',
+    idType: 'هوية اماراتية',
+    nationality: 'فلسطين',
+    category: 'وكيل',
+    notes: 'موكل مستورد من كشف حساب Ecash + بيانات الوكالة الرقمية.',
+    createdAt: '2025-07-06T00:00:00.000Z'
+  },
+  {
+    id: 'eid_784199298525710',
+    fullName: 'أحمد حلمي جمعة رشوان',
+    email: 'ahmedhelmy200@gmail.com',
+    phone: '0544144149',
+    address: 'شارع خليفة محمد بن زايد',
+    idNumber: '784199298525710',
+    idType: 'هوية اماراتية',
+    nationality: 'مصر',
+    category: 'وكيل',
+    notes: 'نوع الوكالة: وكالة خاصة بالقضايا | أرقام الطلبات: 563081، 531442، 515333.',
+    createdAt: '2025-06-20T00:00:00.000Z'
+  },
+  {
+    id: 'eid_784197824262063',
+    fullName: 'الشيخ ناصر ماجد سلطان القاسمي',
+    phone: '0545171444',
+    idNumber: '784197824262063',
+    idType: 'هوية اماراتية',
+    address: 'الشارقة',
+    category: 'موكل',
+    createdAt: new Date().toISOString(),
+    email: '',
+    notes: ''
+  },
+  {
+    id: 'eid_784198449625288',
+    fullName: 'شريف ماهر عوض فرج',
+    email: 'sharifmaher25@gmail.com',
+    phone: '971556252733',
+    address: 'دبي',
+    idNumber: '784198449625288',
+    idType: 'هوية اماراتية',
+    nationality: 'مصر',
+    category: 'موكل',
+    notes: 'وكالة رقمية رقم 551885 بتاريخ 2025-10-06.',
+    createdAt: '2025-10-06T00:00:00.000Z'
+  },
+  {
+    id: 'pass_A37601848',
+    fullName: 'ابو الحمد محمود ابو الحمد',
+    idNumber: 'A37601848',
+    idType: 'جواز سفر',
+    nationality: 'مصر',
+    address: 'عجمان',
+    category: 'موكل',
+    createdAt: new Date().toISOString(),
+    email: '',
+    phone: '',
+    notes: ''
+  },
+  { id: 'c_1', fullName: 'احمد ثروت', category: 'موكل', createdAt: new Date().toISOString(), email: '', phone: '', address: '', notes: '' },
+  { id: 'c_47', fullName: 'إسلام السيد محمد', email: 'eslamelborhamy@gmail.com', phone: '971502827019', category: 'موكل', createdAt: '2025-10-23T00:00:00.000Z', notes: 'وكالة رقمية 561525', address: '' },
+  { id: 'c_55', fullName: 'آية علي عبدالهادي الهريدي', email: 'ayaali545@icloud.com', phone: '971545520416', category: 'موكل', createdAt: '2025-07-06T00:00:00.000Z', notes: 'وكالة رقمية 503497', address: '' },
+  { id: 'c_51', fullName: 'محمد جلال عمر عطية', email: 'm.galal961988@gmail.com', phone: '971567565650', category: 'موكل', createdAt: '2025-08-19T00:00:00.000Z', notes: 'وكالة رقمية 527786', address: '' }
+];
+
+const INITIAL_TRANSACTIONS: Transaction[] = [
+  // ربط المعاملات المالية السابقة بـ "سمر أسامة" عبر المعرف الموحد الجديد
+  { id: 'tx-1', date: '2025-07-07T09:00:06.000Z', amount: 10.00, type: 'INCOME', category: 'INVOICE', description: 'ADCB Purchase Credit Ref. PHUB507043685', clientId: 'eid_78419904400406', isPaid: true },
+  { id: 'tx-2', date: '2025-07-07T09:00:06.000Z', amount: 5.00, type: 'EXPENSE', category: 'OFFICE', description: 'Virtual Account noqodi charges', clientId: 'eid_78419904400406', isPaid: true },
+  { id: 'tx-5', date: '2025-07-12T06:00:09.000Z', amount: 5500.00, type: 'INCOME', category: 'INVOICE', description: 'ADCB Purchase Credit Ref. PHUB509385121', clientId: 'eid_78419904400406', isPaid: true },
+  { id: 'tx-8', date: '2025-07-12T06:53:46.000Z', amount: 4572.50, type: 'EXPENSE', category: 'GOVERNMENT', description: 'Change Status-SC - Establishments Ref 2144498240', clientId: 'eid_78419904400406', isPaid: true }
+];
 
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [data, setData] = useState<StoreData>(() => {
@@ -114,9 +185,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       console.error("Store initialization error:", e);
     }
     return {
-      clients: [],
+      clients: INITIAL_CLIENTS,
       cases: [],
-      transactions: [],
+      transactions: INITIAL_TRANSACTIONS,
       documents: [],
       legalTemplates: INITIAL_TEMPLATES,
       reminders: [],
@@ -135,14 +206,33 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [data]);
 
   const addClient = (client: Client) => {
+    // خوارزمية منع التكرار: التحقق من الهوية أو الجواز
+    const exists = data.clients.find(c => 
+        (client.idNumber && c.idNumber === client.idNumber) || 
+        (client.fullName.trim() === c.fullName.trim())
+    );
+    
+    if (exists) {
+        alert("هذا الموكل مسجل مسبقاً في النظام.");
+        return false;
+    }
+
     setData(prev => ({ ...prev, clients: [...prev.clients, client] }));
     playSound('success');
     return true;
   };
 
   const addClientsBatch = (newClients: Client[]) => {
-    setData(prev => ({ ...prev, clients: [...prev.clients, ...newClients] }));
-    playSound('success');
+      setData(prev => {
+          const uniqueNewClients = newClients.filter(newC => 
+            !prev.clients.some(oldC => 
+                (newC.idNumber && oldC.idNumber === newC.idNumber) || 
+                (newC.fullName.trim() === oldC.fullName.trim())
+            )
+          );
+          return { ...prev, clients: [...prev.clients, ...uniqueNewClients] };
+      });
+      playSound('success');
   };
 
   const updateClient = (client: Client) => {
@@ -195,7 +285,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     playSound('click');
   };
 
-  // MISSING ACTIONS FIX: Implemented legal template management actions.
   const addLegalTemplate = (template: LegalTemplate) => {
     setData(prev => ({ ...prev, legalTemplates: [...prev.legalTemplates, template] }));
     playSound('success');
@@ -211,7 +300,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     playSound('click');
   };
 
-  // MISSING ACTIONS FIX: Implemented reminder management actions.
   const addReminder = (reminder: Reminder) => {
     setData(prev => ({ ...prev, reminders: [...prev.reminders, reminder] }));
     playSound('notification');

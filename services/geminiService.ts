@@ -11,7 +11,10 @@ export const smartDataMapper = async (rawLegacyData: string) => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: `تحليل واستخراج بيانات الموكلين من النص التالي بتنسيق JSON: "${rawLegacyData}"`,
+      contents: `تحليل واستخراج بيانات الموكلين أو المعاملات المالية من النص التالي بتنسيق JSON.
+      النص قد يكون كشف حساب بنكي (Account Statement) أو قائمة أسماء.
+      إذا كان كشف حساب، استخرج المعاملات (Transactions) مع تحديد نوعها (INCOME للشحن/الإيداع و EXPENSE للرسوم/الضريبة/السحب).
+      النص: "${rawLegacyData}"`,
       config: {
         thinkingConfig: { thinkingBudget: 16000 },
         responseMimeType: "application/json",
@@ -20,12 +23,15 @@ export const smartDataMapper = async (rawLegacyData: string) => {
           items: {
             type: Type.OBJECT,
             properties: {
-              fullName: { type: Type.STRING },
+              fullName: { type: Type.STRING, description: "اسم الموكل إذا وجد" },
+              description: { type: Type.STRING, description: "وصف المعاملة" },
+              amount: { type: Type.NUMBER, description: "المبلغ" },
+              type: { type: Type.STRING, enum: ["INCOME", "EXPENSE"] },
+              date: { type: Type.STRING, description: "التاريخ بتنسيق ISO" },
               phone: { type: Type.STRING },
-              email: { type: Type.STRING },
               address: { type: Type.STRING }
             },
-            required: ["fullName"]
+            required: ["description"]
           }
         }
       }
